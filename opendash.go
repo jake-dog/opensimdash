@@ -9,16 +9,12 @@ import (
 
 var logger = log.New(os.Stdout, "", log.LstdFlags|log.LUTC|log.Lshortfile)
 
-func percentFunc(leds []byte, perc, i int, percents ...int) {
-	if perc >= percents[0] {
-		leds[i] = 1
-		if i < len(leds)-1 {
-			i = i + 1
-			percentFunc(leds, perc, i, percents[1:]...)
-		}
-	} else {
-		for n := i; n < len(leds); n++ {
-			leds[n] = 0
+func setLeds(leds []byte, levels []int, signal int) {
+	for i, level := range levels {
+		if signal >= level {
+			leds[i] = 1
+		} else {
+			leds[i] = 0
 		}
 	}
 }
@@ -57,6 +53,7 @@ func main() {
 	snd := make([]byte, 64)                         // HID can use other packet size maybe...
 	p := &codemasters.DirtPacket{}                  // TODO oh well obviously...
 	leds := make([]byte, 8)                         // Just for testing
+	levels := []int{65, 70, 74, 76, 78, 80, 82, 85} // LED thresholds
 	var ledByte byte
 	for {
 		// Retrieve a packet
@@ -68,7 +65,7 @@ func main() {
 		// Do something to convert it into an HID payload
 		// TODO this is just for testing
 		rpmPercent := (100 * p.EngineRate) / p.Max_rpm
-		percentFunc(leds, int(rpmPercent), 0, 65, 70, 74, 76, 78, 80, 82, 85)
+		setLeds(leds, levels, int(rpmPercent))
 		ledByte = 0
 		for i, b := range leds {
 			ledByte |= b << uint(i)
