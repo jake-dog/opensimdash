@@ -8,9 +8,10 @@ import (
 	"math"
 )
 
-// 264 bytes (66 32-bit words/fields/floats)
+// DirtPacketSize is 264 bytes (66 * 32-bit words/fields/floats) [extradata=3]
 const DirtPacketSize = 264
 
+// DirtPacket is a bit shy of 264 bytes, so clearly missing some data.
 type DirtPacket struct {
 	Time           float32
 	LapTime        float32
