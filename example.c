@@ -62,7 +62,7 @@ int main(void)
 	print("Begin rawhid example program\n");
 	while (1) {
 		// if received data, do something with it
-		r = usb_rawhid_recv(buffer, 0);
+		r = usb_rawhid_recv(buffer, 1);
 		if (r > 0) {
 			// output 4 bits to D0, D1, D2, D3 pins
 			DDRD = 0xFF;
