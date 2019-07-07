@@ -9,6 +9,20 @@ import (
 
 var logger = log.New(os.Stdout, "", log.LstdFlags|log.LUTC|log.Lshortfile)
 
+func percentFunc(leds []byte, perc, i int, percents ...int) {
+	if perc >= percents[0] {
+		leds[i] = 1
+		if i < len(leds)-1 {
+			i = i + 1
+			percentFunc(leds, perc, i, percents[1:]...)
+		}
+	} else {
+		for n := i; n < len(leds); n++ {
+			leds[n] = 0
+		}
+	}
+}
+
 func main() {
 	// Start up the HID debugger for our device
 	// TODO this all needs to be configurable/optional/etc.
@@ -41,15 +55,25 @@ func main() {
 	// TODO this all needs to be configurable/optional/etc.
 	rcv := make([]byte, codemasters.DirtPacketSize) // Maybe 1500 (standard frame)
 	snd := make([]byte, 64)                         // HID can use other packet size maybe...
-	packet := &codemasters.DirtPacket{}             // TODO oh well obviously...
+	p := &codemasters.DirtPacket{}                  // TODO oh well obviously...
+	leds := make([]byte, 8)                         // Just for testing
+	var ledByte byte
 	for {
 		// Retrieve a packet
-		if err := s.DecodePacket(packet, rcv); err != nil {
+		if err := s.DecodePacket(p, rcv); err != nil {
 			logger.Println(err)
 			break // TODO probably need better than this for error handling...
 		}
 
 		// Do something to convert it into an HID payload
+		// TODO this is just for testing
+		rpmPercent := (100 * p.EngineRate) / p.Max_rpm
+		percentFunc(leds, int(rpmPercent), 0, 65, 70, 74, 76, 78, 80, 82, 85)
+		ledByte = 0
+		for i, b := range leds {
+			ledByte |= b << uint(i)
+		}
+		snd[0] = ledByte
 
 		// Send the HID payload
 		if _, err := c.Write(snd); err != nil {
