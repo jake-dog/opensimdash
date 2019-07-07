@@ -37,8 +37,8 @@ uint8_t buffer[64];
 int main(void)
 {
 	int8_t r;
-	uint8_t i;
-	uint16_t val, count=0;
+	//uint8_t i;
+	//uint16_t val, count=0;
 
 	// set for 16 MHz clock
 	CPU_PRESCALE(0);
@@ -55,9 +55,9 @@ int main(void)
 
         // Configure timer 0 to generate a timer overflow interrupt every
         // 256*1024 clock cycles, or approx 61 Hz when using 16 MHz clock
-        TCCR0A = 0x00;
-        TCCR0B = 0x05;
-        TIMSK0 = (1<<TOIE0);
+        //TCCR0A = 0x00;
+        //TCCR0B = 0x05;
+        //TIMSK0 = (1<<TOIE0);
 
 	print("Begin rawhid example program\n");
 	while (1) {
@@ -65,15 +65,16 @@ int main(void)
 		r = usb_rawhid_recv(buffer, 0);
 		if (r > 0) {
 			// output 4 bits to D0, D1, D2, D3 pins
-			DDRD = 0x0F;
-			PORTD = (PORTD & 0xF0) | (buffer[0] & 0x0F);
+			DDRD = 0xFF;
+			//PORTD = (PORTD & 0xF0) | (buffer[0] & 0x0F);
+			PORTD = buffer[0];
 			// ignore the other 63.5 bytes....
 			print("receive packet, buffer[0]=");
 			phex(buffer[0]);
 			print("\n");
 		}
 		// if time to send output, transmit something interesting
-		if (do_output) {
+		/*if (do_output) {
 			do_output = 0;
 			// send a packet, first 2 bytes 0xABCD
 			buffer[0] = 0xAB;
@@ -99,12 +100,12 @@ int main(void)
 			phex(r);
 			print("\n");
 			count++;
-		}
+		}*/
 	}
 }
 
 // This interrupt routine is run approx 61 times per second.
-ISR(TIMER0_OVF_vect)
+/*ISR(TIMER0_OVF_vect)
 {
 	static uint8_t count=0;
 
@@ -113,7 +114,7 @@ ISR(TIMER0_OVF_vect)
 		count = 0;
 		do_output = 1;
 	}
-}
+}*/
 
 
 
