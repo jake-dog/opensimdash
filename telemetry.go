@@ -13,12 +13,12 @@ type Decodable interface {
 	Size() int
 }
 
-// Client wraps net.UDPConn providing extra methods for parsing telemtry packets
+// Telemetry wraps net.UDPConn providing extra methods for parsing UDP telemetry
 type Telemetry struct {
 	*net.UDPConn
 }
 
-// NewTelemetry returns a new Telemtry UDP connection, wrapping *net.UDPConn,
+// NewTelemetry returns a new Telemetry UDP connection, wrapping *net.UDPConn,
 // which can rapidly process various telemetry packets.
 // If provided address is empty, ":20777", will be used.
 func NewTelemetry(address string) (*Telemetry, error) {
