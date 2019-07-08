@@ -23,5 +23,6 @@ Alternatives
 * https://www.simhubdash.com
 * https://fanaleds.com
 * https://www.stryder-it.de/simdashboard/
+* https://x-sim.de/software.php
 * Many random things on https://www.racedepartment.com
 
