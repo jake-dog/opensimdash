@@ -25,8 +25,8 @@ func main() {
 	hdebug := &HIDDebugger{
 		VendorID:  0x16c0,
 		ProductID: 0x0480,
-		Usage:     0xFF31,
-		UsagePage: 0x0074,
+		UsagePage: 0xFF31,
+		Usage:     0x0074,
 		Log:       logger,
 	}
 	go hdebug.ReadLoop()
@@ -53,7 +53,7 @@ func main() {
 	snd := make([]byte, 64)                         // HID can use other packet size maybe...
 	p := &codemasters.DirtPacket{}                  // TODO oh well obviously...
 	leds := make([]byte, 8)                         // Just for testing
-	levels := []int{65, 70, 74, 76, 78, 80, 82, 85} // LED thresholds
+	levels := []int{80, 83, 85, 87, 89, 91, 93, 95} // LED thresholds
 	var ledByte byte
 	for {
 		// Retrieve a packet
