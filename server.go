@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -15,6 +16,10 @@ var upgrader = websocket.Upgrader{
 func init() {
 	http.HandleFunc("/sock", wsEndpoint)
 	http.Handle("/", http.FileServer(http.Dir("static")))
+}
+
+type dataPoint struct {
+	Speed int
 }
 
 // define a reader which will listen for
@@ -50,8 +55,13 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	logger.Println("Client Connected")
 
+	var i int
 	for {
-		err = ws.WriteMessage(1, []byte("Hi Client!"))
+		b, _ := json.Marshal(&dataPoint{Speed: (50 + i) % 700})
+		i = i + 1
+
+		//err = ws.WriteMessage(1, []byte("Hi Client!"))
+		err = ws.WriteMessage(1, b)
 		if err != nil {
 			logger.Println(err)
 		}

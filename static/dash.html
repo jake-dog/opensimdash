@@ -19,7 +19,7 @@
             console.log("Successfully Connected");
             //socket.send("Hi From the Client!")
         };
-        
+
         socket.onclose = event => {
             console.log("Socket Closed Connection: ", event);
             //socket.send("Client Closed!")
@@ -28,9 +28,11 @@
         socket.onerror = error => {
             console.log("Socket Error: ", error);
         };
-		
+
 		socket.onmessage = event => {
 			console.log("Socket message received:", event);
+			var d = JSON.parse(event.data)
+			gaugePS.value = d.Speed;
 			//gaugePS.value = "530";
 			
 			// Dynamicly resize it
@@ -38,7 +40,7 @@
 			//gaugePS.options.majorTicks=['0','50','100','150','200','250','300','350','400','450','500']
 			//gaugePS.update()
 		};
-		
+
 		var gaugePS = new RadialGauge({
 			renderTo: 'gauge-ps',
 			width: 400,
