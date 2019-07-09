@@ -9,6 +9,9 @@ import (
 	"github.com/jake-dog/opendash/codemasters"
 )
 
+// Speed appears to be in meters per second (m/s), so convert to MPH
+const mslashs float32 = 2.23694
+
 var logger = log.New(os.Stdout, "", log.LstdFlags|log.LUTC|log.Lshortfile)
 
 func setLeds(leds []byte, levels []int, signal int) {
@@ -68,7 +71,7 @@ func main() {
 		}
 
 		// Send data to websockets
-		b, _ := json.Marshal(&dataPoint{Speed: int(p.Speed)})
+		b, _ := json.Marshal(&dataPoint{Speed: int(p.Speed * mslashs)})
 		Write(b)
 
 		// Do something to convert it into an HID payload
