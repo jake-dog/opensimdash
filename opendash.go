@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/jake-dog/opendash/codemasters"
@@ -20,6 +22,9 @@ func setLeds(leds []byte, levels []int, signal int) {
 }
 
 func main() {
+	// TODO need to make this configurable, and catch errors it throws
+	go http.ListenAndServe(":8080", nil)
+
 	// Start up the HID debugger for our device
 	// TODO this all needs to be configurable/optional/etc.
 	hdebug := &HIDDebugger{
@@ -61,6 +66,10 @@ func main() {
 			logger.Println(err)
 			break // TODO probably need better than this for error handling...
 		}
+
+		// Send data to websockets
+		b, _ := json.Marshal(&dataPoint{Speed: int(p.Speed)})
+		Write(b)
 
 		// Do something to convert it into an HID payload
 		// TODO this is just for testing

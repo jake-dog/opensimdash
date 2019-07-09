@@ -1,17 +1,19 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
-	"time"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
+var (
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+	defaultWriter = &WebSockWriter{}
+)
 
 func init() {
 	http.HandleFunc("/sock", wsEndpoint)
@@ -19,35 +21,62 @@ func init() {
 }
 
 type dataPoint struct {
-	Speed int
+	//Time       float32
+	Speed      int
+	Gear       int
+	percentRPM int
 }
 
-// define a reader which will listen for
-// new messages being sent to our WebSocket
-// endpoint
-/*func reader(conn *websocket.Conn) {
-	for {
-		// read in a message
-		messageType, p, err := conn.ReadMessage()
-		if err != nil {
-			logger.Println(err)
-			return
-		}
-		// print out that message for clarity
-		fmt.Println(string(p))
+type WebSockWriter struct {
+	writersmu sync.Mutex
+	writers   []*websocket.Conn
+}
 
-		if err := conn.WriteMessage(messageType, p); err != nil {
+func (w *WebSockWriter) Write(b []byte) (n int, err error) {
+	w.writersmu.Lock()
+	defer w.writersmu.Unlock()
+
+	// Send data to each WS client, and remove clients who throw errors
+	var i int
+	for _, ws := range w.writers {
+		if err = ws.WriteMessage(1, b); err != nil {
 			logger.Println(err)
-			return
+		} else {
+			w.writers[i] = ws
+			i++
 		}
 	}
-}*/
+	w.writers = w.writers[:i]
+
+	if err != nil {
+		n = len(b)
+	}
+	return n, err
+}
+
+func (w *WebSockWriter) Add(ws *websocket.Conn) {
+	w.writersmu.Lock()
+	defer w.writersmu.Unlock()
+
+	// Add a WS, and create array if its not already there
+	if w.writers == nil {
+		w.writers = make([]*websocket.Conn, 0, 1)
+	}
+	w.writers = append(w.writers, ws)
+}
+
+func Write(b []byte) (n int, err error) {
+	return defaultWriter.Write(b)
+}
+
+func Add(ws *websocket.Conn) {
+	defaultWriter.Add(ws)
+}
 
 func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-	// upgrade this connection to a WebSocket
-	// connection
+	// Upgrade connection to a WebSocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logger.Println(err)
@@ -55,21 +84,6 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	logger.Println("Client Connected")
 
-	var i int
-	for {
-		b, _ := json.Marshal(&dataPoint{Speed: (50 + i) % 700})
-		i = i + 1
-
-		//err = ws.WriteMessage(1, []byte("Hi Client!"))
-		err = ws.WriteMessage(1, b)
-		if err != nil {
-			logger.Println(err)
-		}
-
-		time.Sleep(2 * time.Second)
-	}
-
-	// listen indefinitely for new messages coming
-	// through on our WebSocket connection
-	//reader(ws)
+	// Add our new WS connection to the global WebSocketWriter
+	Add(ws)
 }
