@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Dashboard Demo</title>
+    <script src="./gauge.min.js"></script>
+  </head>
+  <body>
+    <h2>Hello World!</h2>
+    <canvas id="gauge-ps"></canvas>
+
+    <script>
+        let socket = new WebSocket("ws://127.0.0.1:8080/sock");
+        console.log("Attempting Connection...");
+
+        socket.onopen = () => {
+            console.log("Successfully Connected");
+            //socket.send("Hi From the Client!")
+        };
+        
+        socket.onclose = event => {
+            console.log("Socket Closed Connection: ", event);
+            //socket.send("Client Closed!")
+        };
+
+        socket.onerror = error => {
+            console.log("Socket Error: ", error);
+        };
+		
+		socket.onmessage = event => {
+			console.log("Socket message received:", event);
+			//gaugePS.value = "530";
+			
+			// Dynamicly resize it
+			//gaugePS.options.maxValue=500
+			//gaugePS.options.majorTicks=['0','50','100','150','200','250','300','350','400','450','500']
+			//gaugePS.update()
+		};
+		
+		var gaugePS = new RadialGauge({
+			renderTo: 'gauge-ps',
+			width: 400,
+			height: 400,
+			units: 'PS',
+			minValue: 0,
+			maxValue: 1000,
+			majorTicks: [
+				'0',
+				'100',
+				'200',
+				'300',
+				'400',
+				'500',
+				'600',
+				'700',
+				'800',
+				'900',
+				'1000'
+			],
+			minorTicks: 2,
+			ticksAngle: 270,
+			startAngle: 45,
+			strokeTicks: true,
+			highlights  : [
+				{ from : 457,  to : 880, color : 'rgba(78,   78, 76, 0.5)' },
+				{ from : 880, to : 1000, color : 'rgba(225, 7, 23, 0.75)' }
+			],
+			valueInt: 1,
+			valueDec: 0,
+			colorPlate: "#fff",
+			colorMajorTicks: "#686868",
+			colorMinorTicks: "#686868",
+			colorTitle: "#000",
+			colorUnits: "#000",
+			colorNumbers: "#686868",
+			valueBox: true,
+			colorValueText: "#000",
+			colorValueBoxRect: "#fff",
+			colorValueBoxRectEnd: "#fff",
+			colorValueBoxBackground: "#fff",
+			colorValueBoxShadow: false,
+			colorValueTextShadow: false,
+			colorNeedleShadowUp: true,
+			colorNeedleShadowDown: false,
+			colorNeedle: "rgba(200, 50, 50, .75)",
+			colorNeedleEnd: "rgba(200, 50, 50, .75)",
+			colorNeedleCircleOuter: "rgba(200, 200, 200, 1)",
+			colorNeedleCircleOuterEnd: "rgba(200, 200, 200, 1)",
+			borderShadowWidth: 0,
+			borders: true,
+			borderInnerWidth: 0,
+			borderMiddleWidth: 0,
+			borderOuterWidth: 5,
+			colorBorderOuter: "#fafafa",
+			colorBorderOuterEnd: "#cdcdcd",
+			needleType: "arrow",
+			needleWidth: 2,
+			needleCircleSize: 7,
+			needleCircleOuter: true,
+			needleCircleInner: false,
+			animationDuration: 1500,
+			animationRule: "dequint",
+			fontNumbers: "Verdana",
+			fontTitle: "Verdana",
+			fontUnits: "Verdana",
+			fontValue: "Led",
+			fontValueStyle: 'italic',
+			fontNumbersSize: 20,
+			fontNumbersStyle: 'italic',
+			fontNumbersWeight: 'bold',
+			fontTitleSize: 24,
+			fontUnitsSize: 22,
+			fontValueSize: 50,
+			animatedValue: true
+		});
+		gaugePS.draw();
+    </script>
+  </body>
+</html>
