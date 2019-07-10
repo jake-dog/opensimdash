@@ -29,95 +29,95 @@
             console.log("Socket Error: ", error);
         };
 
-		socket.onmessage = event => {
-			console.log("Socket message received:", event);
-			var d = JSON.parse(event.data)
-			gaugePS.value = d.Speed;
-			//gaugePS.value = "530";
-			
-			// Dynamicly resize it
-			//gaugePS.options.maxValue=500
-			//gaugePS.options.majorTicks=['0','50','100','150','200','250','300','350','400','450','500']
-			//gaugePS.update()
-		};
+        socket.onmessage = event => {
+          console.log("Socket message received:", event);
+          var d = JSON.parse(event.data)
+          gaugePS.value = d.Speed;
+          //gaugePS.value = "530";
 
-		var gaugePS = new RadialGauge({
-			renderTo: 'gauge-ps',
-			width: 400,
-			height: 400,
-			units: 'PS',
-			minValue: 0,
-			maxValue: 100,
-			majorTicks: [
-				'0',
-				'10',
-				'20',
-				'30',
-				'40',
-				'50',
-				'60',
-				'70',
-				'80',
-				'90',
-				'100'
-			],
-			minorTicks: 2,
-			ticksAngle: 270,
-			startAngle: 45,
-			strokeTicks: true,
-			highlights  : [
-				{ from : 50,  to : 80, color : 'rgba(78,   78, 76, 0.5)' },
-				{ from : 80, to : 100, color : 'rgba(225, 7, 23, 0.75)' }
-			],
-			valueInt: 1,
-			valueDec: 0,
-			colorPlate: "#fff",
-			colorMajorTicks: "#686868",
-			colorMinorTicks: "#686868",
-			colorTitle: "#000",
-			colorUnits: "#000",
-			colorNumbers: "#686868",
-			valueBox: true,
-			colorValueText: "#000",
-			colorValueBoxRect: "#fff",
-			colorValueBoxRectEnd: "#fff",
-			colorValueBoxBackground: "#fff",
-			colorValueBoxShadow: false,
-			colorValueTextShadow: false,
-			colorNeedleShadowUp: true,
-			colorNeedleShadowDown: false,
-			colorNeedle: "rgba(200, 50, 50, .75)",
-			colorNeedleEnd: "rgba(200, 50, 50, .75)",
-			colorNeedleCircleOuter: "rgba(200, 200, 200, 1)",
-			colorNeedleCircleOuterEnd: "rgba(200, 200, 200, 1)",
-			borderShadowWidth: 0,
-			borders: true,
-			borderInnerWidth: 0,
-			borderMiddleWidth: 0,
-			borderOuterWidth: 5,
-			colorBorderOuter: "#fafafa",
-			colorBorderOuterEnd: "#cdcdcd",
-			needleType: "arrow",
-			needleWidth: 2,
-			needleCircleSize: 7,
-			needleCircleOuter: true,
-			needleCircleInner: false,
-			animationDuration: 1500,
-			animationRule: "dequint",
-			fontNumbers: "Verdana",
-			fontTitle: "Verdana",
-			fontUnits: "Verdana",
-			fontValue: "Led",
-			fontValueStyle: 'italic',
-			fontNumbersSize: 20,
-			fontNumbersStyle: 'italic',
-			fontNumbersWeight: 'bold',
-			fontTitleSize: 24,
-			fontUnitsSize: 22,
-			fontValueSize: 50,
-			animatedValue: true
-		});
-		gaugePS.draw();
+          // Dynamicly resize it
+          //gaugePS.options.maxValue=500
+          //gaugePS.options.majorTicks=['0','50','100','150','200','250','300','350','400','450','500']
+          //gaugePS.update()
+        };
+
+        var gaugePS = new RadialGauge({
+          renderTo: 'gauge-ps',
+          width: 400,
+          height: 400,
+          units: 'PS',
+          minValue: 0,
+          maxValue: 100,
+          majorTicks: [
+            '0',
+            '10',
+            '20',
+            '30',
+            '40',
+            '50',
+            '60',
+            '70',
+            '80',
+            '90',
+            '100'
+          ],
+          minorTicks: 2,
+          ticksAngle: 270,
+          startAngle: 45,
+          strokeTicks: true,
+          highlights  : [
+            { from : 50,  to : 80, color : 'rgba(78,   78, 76, 0.5)' },
+            { from : 80, to : 100, color : 'rgba(225, 7, 23, 0.75)' }
+          ],
+          valueInt: 1,
+          valueDec: 0,
+          colorPlate: "#fff",
+          colorMajorTicks: "#686868",
+          colorMinorTicks: "#686868",
+          colorTitle: "#000",
+          colorUnits: "#000",
+          colorNumbers: "#686868",
+          valueBox: true,
+          colorValueText: "#000",
+          colorValueBoxRect: "#fff",
+          colorValueBoxRectEnd: "#fff",
+          colorValueBoxBackground: "#fff",
+          colorValueBoxShadow: false,
+          colorValueTextShadow: false,
+          colorNeedleShadowUp: true,
+          colorNeedleShadowDown: false,
+          colorNeedle: "rgba(200, 50, 50, .75)",
+          colorNeedleEnd: "rgba(200, 50, 50, .75)",
+          colorNeedleCircleOuter: "rgba(200, 200, 200, 1)",
+          colorNeedleCircleOuterEnd: "rgba(200, 200, 200, 1)",
+          borderShadowWidth: 0,
+          borders: true,
+          borderInnerWidth: 0,
+          borderMiddleWidth: 0,
+          borderOuterWidth: 5,
+          colorBorderOuter: "#fafafa",
+          colorBorderOuterEnd: "#cdcdcd",
+          needleType: "arrow",
+          needleWidth: 2,
+          needleCircleSize: 7,
+          needleCircleOuter: true,
+          needleCircleInner: false,
+          animationDuration: 1500,
+          animationRule: "dequint",
+          fontNumbers: "Verdana",
+          fontTitle: "Verdana",
+          fontUnits: "Verdana",
+          fontValue: "Led",
+          fontValueStyle: 'italic',
+          fontNumbersSize: 20,
+          fontNumbersStyle: 'italic',
+          fontNumbersWeight: 'bold',
+          fontTitleSize: 24,
+          fontUnitsSize: 22,
+          fontValueSize: 50,
+          animatedValue: true
+        });
+        gaugePS.draw();
     </script>
   </body>
 </html>
