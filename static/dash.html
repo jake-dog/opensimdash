@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Dashboard Demo</title>
     <script src="./gauge.min.js"></script>
+    <script type="text/javascript" src="./segment-display.js"></script>
     <style type="text/css">
       #unlock-button {
         display: none;
@@ -18,7 +19,7 @@
         <button id="lock-landscape-button">Fullscreen</button>
         <button id="unlock-button">Exit</button>
       </div>
-      <canvas id="gauge-ps"></canvas>
+      <canvas id="gauge-ps"></canvas><canvas id="display" width="390" height="210"></canvas>
     </div>
 
     <script>
@@ -69,10 +70,11 @@
         };
 
         socket.onmessage = event => {
-          console.log("Socket message received:", event);
+          //console.log("Socket message received:", event);
           var d = JSON.parse(event.data)
+          gaugePS.animation.cancel() //not actually sure if this helps
           gaugePS.value = d.Speed;
-          //gaugePS.value = "530";
+          display.setValue(String(d.Gear));
 
           // Dynamicly resize it
           //gaugePS.options.maxValue=500
@@ -80,11 +82,26 @@
           //gaugePS.update()
         };
 
+        var display = new SegmentDisplay("display");
+        display.pattern         = "#";
+        display.displayAngle    = 6;
+        display.digitHeight     = 20;
+        display.digitWidth      = 14;
+        display.digitDistance   = 2.5;
+        display.segmentWidth    = 2;
+        display.segmentDistance = 0.3;
+        display.segmentCount    = 7;
+        display.cornerType      = 3;
+        display.colorOn         = "#ffcc66";
+        display.colorOff        = "#4b1e05";
+        display.value           = "0";
+        display.draw();
+
         var gaugePS = new RadialGauge({
           renderTo: 'gauge-ps',
           width: 400,
           height: 400,
-          units: 'PS',
+          units: 'MPH',
           minValue: 0,
           maxValue: 150,
           majorTicks: [
@@ -146,7 +163,7 @@
           needleCircleSize: 7,
           needleCircleOuter: true,
           needleCircleInner: false,
-          animationDuration: 1500,
+          animationDuration: 70,
           animationRule: "dequint",
           fontNumbers: "Verdana",
           fontTitle: "Verdana",
