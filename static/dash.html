@@ -6,12 +6,51 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Dashboard Demo</title>
     <script src="./gauge.min.js"></script>
+    <style type="text/css">
+      #unlock-button {
+        display: none;
+      }
+    </style>
   </head>
   <body>
-    <h2>Hello World!</h2>
-    <canvas id="gauge-ps"></canvas>
+    <div id="container">
+      <div id="buttons-container">
+        <button id="lock-landscape-button">Fullscreen</button>
+        <button id="unlock-button">Exit</button>
+      </div>
+      <canvas id="gauge-ps"></canvas>
+    </div>
 
     <script>
+        // Fullscreen stuff
+        var dashboard = document.querySelector("#container"),
+            fullscreen = document.querySelector("#lock-landscape-button"),
+            exitfullscreen = document.querySelector("#unlock-button");
+
+        // Go fullscreen
+        fullscreen.addEventListener('click', function() {
+          if(document.documentElement.requestFullscreen)
+            dashboard.requestFullscreen();
+          else if(document.documentElement.webkitRequestFullScreen)
+            dashboard.webkitRequestFullScreen();
+
+          // Attempt to switch to landscape mode (for phones)
+          screen.orientation.lock("landscape-primary");
+
+          // Swap the buttons around
+          fullscreen.style.display = 'none';
+          exitfullscreen.style.display = 'block';
+        });
+
+        // Allow exiting fullscreen
+        exitfullscreen.addEventListener('click', function() {
+          screen.orientation.unlock();
+          document.exitFullscreen();
+
+          fullscreen.style.display = 'block';
+          exitfullscreen.style.display = 'none';
+        });
+
         let socket = new WebSocket("ws://" + window.location.host + "/sock");
         console.log("Attempting Connection...");
 
