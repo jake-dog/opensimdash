@@ -12,7 +12,7 @@
     <canvas id="gauge-ps"></canvas>
 
     <script>
-        let socket = new WebSocket("ws://127.0.0.1:8080/sock");
+        let socket = new WebSocket("ws://" + window.location.host + "/sock");
         console.log("Attempting Connection...");
 
         socket.onopen = () => {
