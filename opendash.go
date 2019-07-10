@@ -72,7 +72,7 @@ func main() {
 
 		// Send data to websockets
 		b, _ := json.Marshal(&dataPoint{Speed: int(p.Speed * mslashs)})
-		Write(b)
+		WriteMessage(b)
 
 		// Do something to convert it into an HID payload
 		// TODO this is just for testing

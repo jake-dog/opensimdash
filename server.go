@@ -65,11 +65,11 @@ func (w *WebSockWriter) Add(ws *websocket.Conn) {
 	w.writers = append(w.writers, ws)
 }
 
-func Write(b []byte) (n int, err error) {
+func WriteMessage(b []byte) (n int, err error) {
 	return defaultWriter.Write(b)
 }
 
-func Add(ws *websocket.Conn) {
+func AddWebSock(ws *websocket.Conn) {
 	defaultWriter.Add(ws)
 }
 
@@ -85,5 +85,5 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	logger.Println("Client Connected")
 
 	// Add our new WS connection to the global WebSocketWriter
-	Add(ws)
+	AddWebSock(ws)
 }
