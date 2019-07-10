@@ -27,11 +27,15 @@ type dataPoint struct {
 	percentRPM int
 }
 
+// WebSockWriter provides a thread safe mechanism for performing synchronous
+// writes to multiple websockets.  Clients which disconnect are removed from the
+// pool automatically.
 type WebSockWriter struct {
 	writersmu sync.Mutex
 	writers   []*websocket.Conn
 }
 
+// Write binary data to all connected websockets synchronously
 func (w *WebSockWriter) Write(b []byte) (n int, err error) {
 	w.writersmu.Lock()
 	defer w.writersmu.Unlock()
@@ -54,6 +58,8 @@ func (w *WebSockWriter) Write(b []byte) (n int, err error) {
 	return n, err
 }
 
+// Add a websocket to the pool of websockets being written to.  Websockets that
+// disconnect are automatically removed.
 func (w *WebSockWriter) Add(ws *websocket.Conn) {
 	w.writersmu.Lock()
 	defer w.writersmu.Unlock()
@@ -65,10 +71,12 @@ func (w *WebSockWriter) Add(ws *websocket.Conn) {
 	w.writers = append(w.writers, ws)
 }
 
+// WriteMessage to all websockets
 func WriteMessage(b []byte) (n int, err error) {
 	return defaultWriter.Write(b)
 }
 
+// AddWebSock to the pool of websockets
 func AddWebSock(ws *websocket.Conn) {
 	defaultWriter.Add(ws)
 }
