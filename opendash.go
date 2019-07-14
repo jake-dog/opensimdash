@@ -62,7 +62,7 @@ func main() {
 	p := &codemasters.DirtPacket{}                  // TODO oh well obviously...
 	leds := make([]byte, 8)                         // Just for testing
 	levels := []int{80, 83, 85, 87, 89, 91, 93, 95} // LED thresholds
-	var ledByte byte
+	var ledByte, prevLedByte byte
 	for {
 		// Retrieve a packet
 		if err := s.DecodePacket(p, rcv); err != nil {
@@ -75,7 +75,9 @@ func main() {
 			Speed: int(p.Speed * mslashs),
 			Gear:  int(p.Gear),
 		})
-		WriteMessage(b)
+		if _, err := WriteMessage(b); err != nil {
+			logger.Println(err)
+		}
 
 		// Do something to convert it into an HID payload
 		// TODO this is just for testing
@@ -87,7 +89,11 @@ func main() {
 		}
 		snd[0] = ledByte
 
-		// Send the HID payload
+		// Conditionally Send the HID payload if current and last byte wasn't zero
+		if prevLedByte|ledByte == 0 {
+			continue
+		}
+		prevLedByte = ledByte
 		if _, err := c.Write(snd); err != nil {
 			logger.Println(err)
 			break // TODO probably need better than this for error handling...

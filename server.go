@@ -43,8 +43,9 @@ func (w *WebSockWriter) Write(b []byte) (n int, err error) {
 	// Send data to each WS client, and remove clients who throw errors
 	var i int
 	for _, ws := range w.writers {
-		if err = ws.WriteMessage(1, b); err != nil {
-			logger.Println(err)
+		if erro := ws.WriteMessage(1, b); erro != nil {
+			err = erro
+			// ws.Close() // shoudl we force close or let connection timeout?
 		} else {
 			w.writers[i] = ws
 			i++
