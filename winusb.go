@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"sync"
 	"syscall"
 	"unsafe"
 )
@@ -28,6 +28,12 @@ const (
 	DBT_DEVICEREMOVECOMPLETE = 0x8004
 )
 
+const (
+	// Used only for clients listening for USB device events
+	addUSBDevice = iota
+	removeUSBDevice
+)
+
 var (
 	user32                      = syscall.NewLazyDLL("user32.dll")
 	kernel32                    = syscall.NewLazyDLL("kernel32.dll")
@@ -39,6 +45,47 @@ var (
 	pDispatchMessage            = user32.NewProc("DispatchMessageW")
 	pRegisterDeviceNotification = user32.NewProc("RegisterDeviceNotificationW")
 )
+
+// Keep track of who is publishing
+type publisher struct {
+	mu          sync.Mutex
+	subscribers []UsbDeviceNotifier
+}
+
+var pub = &publisher{}
+
+func (p *publisher) addSubscriber(sub UsbDeviceNotifier) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.subscribers = append(p.subscribers, sub)
+}
+
+func (p *publisher) notify(method int, lParam uintptr) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	for _, sub := range p.subscribers {
+		switch method {
+		case addUSBDevice:
+			sub.Add(lParam)
+		case removeUSBDevice:
+			sub.Remove(lParam)
+		}
+	}
+}
+
+// AddSubscriber to the list of USB device notification subscribers.
+func AddSubscriber(sub UsbDeviceNotifier) {
+	pub.addSubscriber(sub)
+}
+
+// UsbDeviceNotifier is an interface for a resource to be notified of USB adds
+// and removals
+type UsbDeviceNotifier interface {
+	Add(uintptr)    // Called on DBT_DEVICEARRIVAL
+	Remove(uintptr) // Called on DBT_DEVICEREMOVECOMPLETE
+}
 
 // https://www.lifewire.com/device-class-guids-for-most-common-types-of-hardware-2619208
 // 745A17A0-74D3-11D0-B6FE-00A0C90F57DA
@@ -114,9 +161,9 @@ func WndProc(hWnd syscall.Handle, msg uint32, wParam, lParam uintptr) uintptr {
 	case WM_DEVICECHANGE:
 		switch wParam {
 		case uintptr(DBT_DEVICEARRIVAL):
-			fmt.Println("Device added")
+			pub.notify(addUSBDevice, lParam)
 		case uintptr(DBT_DEVICEREMOVECOMPLETE):
-			fmt.Println("Device removed")
+			pub.notify(removeUSBDevice, lParam)
 		}
 		return 0
 	default:
@@ -124,10 +171,9 @@ func WndProc(hWnd syscall.Handle, msg uint32, wParam, lParam uintptr) uintptr {
 		ret, _, _ := pDefWindowProc.Call(uintptr(hWnd), uintptr(msg), uintptr(wParam), uintptr(lParam))
 		return ret
 	}
-	return 0
 }
 
-func main() {
+func init() {
 	// Create callback
 	cb := syscall.NewCallback(WndProc)
 	mh, _, _ := pGetModuleHandle.Call(0)
@@ -146,8 +192,8 @@ func main() {
 	wc.Size = uint32(unsafe.Sizeof(wc))
 	a, _, err := pRegisterClassEx.Call(uintptr(unsafe.Pointer(&wc)))
 	if a == 0 {
-		fmt.Println("RegisterClassEx failed: %v", err)
-		os.Exit(1)
+		logger.Printf("RegisterClassEx failed: %v", err)
+		return
 	}
 
 	// Create a message only window
@@ -168,7 +214,8 @@ func main() {
 		uintptr(0))                            //lpParam
 
 	if ret == 0 {
-		fmt.Println("Unable to create a window: ", err)
+		logger.Printf("CreateWindowEx failed: %v", err)
+		return
 	}
 	hWnd := syscall.Handle(ret)
 
@@ -183,15 +230,18 @@ func main() {
 	notificationFilter.szName = 0
 	ret, _, err = pRegisterDeviceNotification.Call(uintptr(hWnd), uintptr(unsafe.Pointer(&notificationFilter)), DEVICE_NOTIFY_ALL_INTERFACE_CLASSES)
 	if ret == 0 {
-		fmt.Println("Unable to register for USB notifications: ", err)
+		logger.Printf("RegisterDeviceNotification failed: %v", err)
+		return
 	}
 
-	// Main message loop
-	var msg MSG
-	for {
-		if ret, _, _ := pGetMessage.Call(uintptr(unsafe.Pointer(&msg)), uintptr(0), uintptr(0), uintptr(0)); ret == 0 {
-			break
+	// If we made it here, start the main message loop
+	go func() {
+		var msg MSG
+		for {
+			if ret, _, _ := pGetMessage.Call(uintptr(unsafe.Pointer(&msg)), uintptr(0), uintptr(0), uintptr(0)); ret == 0 {
+				break
+			}
+			pDispatchMessage.Call((uintptr(unsafe.Pointer(&msg))))
 		}
-		pDispatchMessage.Call((uintptr(unsafe.Pointer(&msg))))
-	}
+	}()
 }
