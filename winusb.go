@@ -8,18 +8,24 @@ import (
 )
 
 const (
-	WM_DESTROY      = 2
-	WM_PAINT        = 15
-	WM_QUIT         = 18
-	WM_COMMAND      = 273
+	// https://docs.microsoft.com/en-us/windows/win32/devio/wm-devicechange
+	// https://godoc.org/github.com/AllenDang/w32#WM_DEVICECHANGE
 	WM_DEVICECHANGE = 537
 
+	// https://godoc.org/github.com/AllenDang/w32#HWND_MESSAGE
 	HWND_MESSAGE = ^uintptr(2)
 
-	DEVICE_NOTIFY_SERVICE_HANDLE        = 1
+	// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerdevicenotificationa#device_notify_all_interface_classes
 	DEVICE_NOTIFY_ALL_INTERFACE_CLASSES = 4
 
+	// https://docs.microsoft.com/en-us/windows/win32/api/dbt/ns-dbt-_dev_broadcast_hdr#DBT_DEVTYP_DEVICEINTERFACE
 	DBT_DEVTYP_DEVICEINTERFACE = 5
+
+	// https://docs.microsoft.com/en-us/windows/win32/devio/wm-devicechange#DBT_DEVICEARRIVAL
+	DBT_DEVICEARRIVAL = 0x8000
+
+	// https://docs.microsoft.com/en-us/windows/win32/devio/wm-devicechange#DBT_DEVICEREMOVECOMPLETE
+	DBT_DEVICEREMOVECOMPLETE = 0x8004
 )
 
 var (
@@ -29,11 +35,9 @@ var (
 	pCreateWindowEx             = user32.NewProc("CreateWindowExW")
 	pGetModuleHandle            = kernel32.NewProc("GetModuleHandleW")
 	pRegisterClassEx            = user32.NewProc("RegisterClassExW")
-	pPostQuitMessage            = user32.NewProc("PostQuitMessage")
 	pGetMessage                 = user32.NewProc("GetMessageW")
 	pDispatchMessage            = user32.NewProc("DispatchMessageW")
 	pRegisterDeviceNotification = user32.NewProc("RegisterDeviceNotificationW")
-	pUpdateWindow               = user32.NewProc("UpdateWindow")
 )
 
 // https://www.lifewire.com/device-class-guids-for-most-common-types-of-hardware-2619208
@@ -45,11 +49,22 @@ var HID_DEVICE_CLASS = GUID{
 	[8]byte{0xb6, 0xfe, 0x00, 0xa0, 0xc9, 0x0f, 0x57, 0xda},
 }
 
+// https://docs.microsoft.com/en-us/windows-hardware/drivers/install/guid-devinterface-usb-device
+// A5DCBF10-6530-11D2-901F-00C04FB951ED
+var GUID_DEVINTERFACE_USB_DEVICE = GUID{
+	0xa5dcbf10,
+	0x6530,
+	0x11d2,
+	[8]byte{0x90, 0x1f, 0x00, 0xc0, 0x4f, 0xb9, 0x51, 0xed},
+}
+
+// https://docs.microsoft.com/en-us/previous-versions//dd162805(v=vs.85)
 type POINT struct {
 	x uintptr
 	y uintptr
 }
 
+// https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-tagmsg
 type MSG struct {
 	hWnd    syscall.Handle
 	message uint32
@@ -59,6 +74,7 @@ type MSG struct {
 	pt      POINT
 }
 
+// https://docs.microsoft.com/en-us/previous-versions/aa373931(v=vs.80)
 type GUID struct {
 	Data1 uint32
 	Data2 uint16
@@ -66,6 +82,7 @@ type GUID struct {
 	Data4 [8]byte
 }
 
+// https://docs.microsoft.com/en-us/windows/win32/api/dbt/ns-dbt-_dev_broadcast_deviceinterface_a
 type DevBroadcastDevinterface struct {
 	dwSize       uint32
 	dwDeviceType uint32
@@ -74,20 +91,33 @@ type DevBroadcastDevinterface struct {
 	szName       uint16
 }
 
+// https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-tagwndclassexa
+// https://golang.org/src/runtime/syscall_windows_test.go
+type Wndclassex struct {
+	Size       uint32
+	Style      uint32
+	WndProc    uintptr
+	ClsExtra   int32
+	WndExtra   int32
+	Instance   syscall.Handle
+	Icon       syscall.Handle
+	Cursor     syscall.Handle
+	Background syscall.Handle
+	MenuName   *uint16
+	ClassName  *uint16
+	IconSm     syscall.Handle
+}
+
+// https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms633573(v=vs.85)
 func WndProc(hWnd syscall.Handle, msg uint32, wParam, lParam uintptr) uintptr {
 	switch msg {
-	case WM_PAINT:
-		fmt.Println("painting")
-		return 0
-	case WM_COMMAND:
-		fmt.Println("a command?")
-		return 0
-	case WM_DESTROY:
-		fmt.Println("quitting")
-		pPostQuitMessage.Call(uintptr(0))
-		return 0
 	case WM_DEVICECHANGE:
-		fmt.Println("device changed!")
+		switch wParam {
+		case uintptr(DBT_DEVICEARRIVAL):
+			fmt.Println("Device added")
+		case uintptr(DBT_DEVICEREMOVECOMPLETE):
+			fmt.Println("Device removed")
+		}
 		return 0
 	default:
 		fmt.Println("doing default", msg)
@@ -99,7 +129,6 @@ func WndProc(hWnd syscall.Handle, msg uint32, wParam, lParam uintptr) uintptr {
 
 func main() {
 	// Create callback
-	// https://stackoverflow.com/questions/2122506/how-to-create-a-hidden-window-in-c
 	cb := syscall.NewCallback(WndProc)
 	mh, _, _ := pGetModuleHandle.Call(0)
 
@@ -108,22 +137,7 @@ func main() {
 	lpWindowName := syscall.StringToUTF16Ptr("opensimdash")
 
 	// Register our invisible window class
-	// From TestRegisterClass:
-	// https://golang.org/src/runtime/syscall_windows_test.go
-	type Wndclassex struct {
-		Size       uint32
-		Style      uint32
-		WndProc    uintptr
-		ClsExtra   int32
-		WndExtra   int32
-		Instance   syscall.Handle
-		Icon       syscall.Handle
-		Cursor     syscall.Handle
-		Background syscall.Handle
-		MenuName   *uint16
-		ClassName  *uint16
-		IconSm     syscall.Handle
-	}
+	// Code from: https://golang.org/src/runtime/syscall_windows_test.go
 	wc := Wndclassex{
 		WndProc:   cb,
 		Instance:  syscall.Handle(mh),
@@ -138,7 +152,7 @@ func main() {
 
 	// Create a message only window
 	// https://docs.microsoft.com/en-us/windows/win32/winmsg/window-features#message-only-windows
-	// CreateWindowEx( 0, class_name, "dummy_name", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, NULL, NULL );
+	// https://stackoverflow.com/a/4081383
 	ret, _, err := pCreateWindowEx.Call(
 		uintptr(0),                            //dwExStyle
 		uintptr(unsafe.Pointer(lpClassName)),  //lpClassName
@@ -171,8 +185,6 @@ func main() {
 	if ret == 0 {
 		fmt.Println("Unable to register for USB notifications: ", err)
 	}
-
-	//pUpdateWindow.Call(uintptr(hWnd))
 
 	// Main message loop
 	var msg MSG
