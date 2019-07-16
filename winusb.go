@@ -158,6 +158,7 @@ type Wndclassex struct {
 // https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms633573(v=vs.85)
 func WndProc(hWnd syscall.Handle, msg uint32, wParam, lParam uintptr) uintptr {
 	switch msg {
+	// TODO handle WM_DESTROY and deregister the hwnd class
 	case WM_DEVICECHANGE:
 		switch wParam {
 		case uintptr(DBT_DEVICEARRIVAL):
@@ -174,68 +175,71 @@ func WndProc(hWnd syscall.Handle, msg uint32, wParam, lParam uintptr) uintptr {
 }
 
 func init() {
-	// Create callback
-	cb := syscall.NewCallback(WndProc)
-	mh, _, _ := pGetModuleHandle.Call(0)
-
-	// Create a class and window name
-	lpClassName := syscall.StringToUTF16Ptr("opensimdash")
-	lpWindowName := syscall.StringToUTF16Ptr("opensimdash")
-
-	// Register our invisible window class
-	// Code from: https://golang.org/src/runtime/syscall_windows_test.go
-	wc := Wndclassex{
-		WndProc:   cb,
-		Instance:  syscall.Handle(mh),
-		ClassName: lpClassName,
-	}
-	wc.Size = uint32(unsafe.Sizeof(wc))
-	a, _, err := pRegisterClassEx.Call(uintptr(unsafe.Pointer(&wc)))
-	if a == 0 {
-		logger.Printf("RegisterClassEx failed: %v", err)
-		return
-	}
-
-	// Create a message only window
-	// https://docs.microsoft.com/en-us/windows/win32/winmsg/window-features#message-only-windows
-	// https://stackoverflow.com/a/4081383
-	ret, _, err := pCreateWindowEx.Call(
-		uintptr(0),                            //dwExStyle
-		uintptr(unsafe.Pointer(lpClassName)),  //lpClassName
-		uintptr(unsafe.Pointer(lpWindowName)), //lpWindowName
-		uintptr(0),                            //dwStyle
-		uintptr(0),                            //X
-		uintptr(0),                            //Y
-		uintptr(0),                            //nWidth
-		uintptr(0),                            //nHeight
-		HWND_MESSAGE,                          //hWndParent
-		uintptr(0),                            //hMenu
-		uintptr(0),                            //hInstance
-		uintptr(0))                            //lpParam
-
-	if ret == 0 {
-		logger.Printf("CreateWindowEx failed: %v", err)
-		return
-	}
-	hWnd := syscall.Handle(ret)
-
-	// Register for device notifications
-	// https://github.com/google/cloud-print-connector/blob/master/winspool/win32.go
-	// https://www.lifewire.com/device-class-guids-for-most-common-types-of-hardware-2619208
-	var notificationFilter DevBroadcastDevinterface
-	notificationFilter.dwSize = uint32(unsafe.Sizeof(notificationFilter))
-	notificationFilter.dwDeviceType = DBT_DEVTYP_DEVICEINTERFACE
-	notificationFilter.dwReserved = 0
-	notificationFilter.classGuid = HID_DEVICE_CLASS
-	notificationFilter.szName = 0
-	ret, _, err = pRegisterDeviceNotification.Call(uintptr(hWnd), uintptr(unsafe.Pointer(&notificationFilter)), DEVICE_NOTIFY_ALL_INTERFACE_CLASSES)
-	if ret == 0 {
-		logger.Printf("RegisterDeviceNotification failed: %v", err)
-		return
-	}
-
-	// If we made it here, start the main message loop
+	// TODO clean this up a bit
+	// The whole thing needs to be run in a single scope/closure otherwise golang
+	// will GC all the structs and the message window will not work.
 	go func() {
+		// Create callback
+		cb := syscall.NewCallback(WndProc)
+		mh, _, _ := pGetModuleHandle.Call(0)
+
+		// Create a class and window name
+		lpClassName := syscall.StringToUTF16Ptr("opensimdash")
+		lpWindowName := syscall.StringToUTF16Ptr("opensimdash")
+
+		// Register our invisible window class
+		// Code from: https://golang.org/src/runtime/syscall_windows_test.go
+		wc := Wndclassex{
+			WndProc:   cb,
+			Instance:  syscall.Handle(mh),
+			ClassName: lpClassName,
+		}
+		wc.Size = uint32(unsafe.Sizeof(wc))
+		a, _, err := pRegisterClassEx.Call(uintptr(unsafe.Pointer(&wc)))
+		if a == 0 {
+			logger.Printf("RegisterClassEx failed: %v", err)
+			return
+		}
+
+		// Create a message only window
+		// https://docs.microsoft.com/en-us/windows/win32/winmsg/window-features#message-only-windows
+		// https://stackoverflow.com/a/4081383
+		ret, _, err := pCreateWindowEx.Call(
+			uintptr(0),                            //dwExStyle
+			uintptr(unsafe.Pointer(lpClassName)),  //lpClassName
+			uintptr(unsafe.Pointer(lpWindowName)), //lpWindowName
+			uintptr(0),                            //dwStyle
+			uintptr(0),                            //X
+			uintptr(0),                            //Y
+			uintptr(0),                            //nWidth
+			uintptr(0),                            //nHeight
+			HWND_MESSAGE,                          //hWndParent
+			uintptr(0),                            //hMenu
+			uintptr(0),                            //hInstance
+			uintptr(0))                            //lpParam
+
+		if ret == 0 {
+			logger.Printf("CreateWindowEx failed: %v", err)
+			return
+		}
+		hWnd := syscall.Handle(ret)
+
+		// Register for device notifications
+		// https://github.com/google/cloud-print-connector/blob/master/winspool/win32.go
+		// https://www.lifewire.com/device-class-guids-for-most-common-types-of-hardware-2619208
+		var notificationFilter DevBroadcastDevinterface
+		notificationFilter.dwSize = uint32(unsafe.Sizeof(notificationFilter))
+		notificationFilter.dwDeviceType = DBT_DEVTYP_DEVICEINTERFACE
+		notificationFilter.dwReserved = 0
+		notificationFilter.classGuid = HID_DEVICE_CLASS
+		notificationFilter.szName = 0
+		ret, _, err = pRegisterDeviceNotification.Call(uintptr(hWnd), uintptr(unsafe.Pointer(&notificationFilter)), DEVICE_NOTIFY_ALL_INTERFACE_CLASSES)
+		if ret == 0 {
+			logger.Printf("RegisterDeviceNotification failed: %v", err)
+			return
+		}
+
+		// If we made it here, start the main message loop
 		var msg MSG
 		for {
 			if ret, _, _ := pGetMessage.Call(uintptr(unsafe.Pointer(&msg)), uintptr(0), uintptr(0), uintptr(0)); ret == 0 {

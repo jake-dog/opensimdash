@@ -1,6 +1,7 @@
 package codemasters
 
 // http://forums.codemasters.com/discussion/46726/d-box-and-udp-telemetry-information
+// https://forums.codemasters.com/topic/16703-d-box-and-udp-telemetry-information/
 //https://docs.google.com/spreadsheets/d/1UTgeE7vbnGIzDz-URRk2eBIPc_LR1vWcZklp7xD9N0Y/edit#gid=0
 
 import (
@@ -85,6 +86,19 @@ type DirtPacket struct {
 
 func (p *DirtPacket) Size() int {
 	return DirtPacketSize
+}
+
+func (p *DirtPacket) GetGear() int {
+	return int(p.Gear)
+}
+
+func (p *DirtPacket) GetRevLightPercent() int {
+	return int((100 * p.EngineRate) / p.Max_rpm)
+}
+
+func (p *DirtPacket) GetSpeed() int {
+	// TODO
+	return 0
 }
 
 // Decode converts a little endian byte array into a DirtPacket.  Although this
