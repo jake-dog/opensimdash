@@ -52,6 +52,7 @@ type HIDRegistrar interface {
 }
 
 type registrar struct {
+	once    sync.Once
 	mu      sync.Mutex
 	devices []HIDWriter
 	writers []HIDWriter
@@ -66,7 +67,13 @@ func Register(d HIDWriter) {
 	r.devices = append(r.devices, d)
 }
 
+// Registrar returns the HIDRegistrar which fullfills the UsbDeviceNotifier
+// interface and is intended to receive notifications on device changes via
+// WM_DEVICECHANGE messages.  Any HID devices which are detected can be written
+// to using the Write method.
 func Registrar() HIDRegistrar {
+	// Add all recognized devices the first time the registrar is invoked
+	r.once.Do(func() { r.Add(uintptr(0)) })
 	return r
 }
 
