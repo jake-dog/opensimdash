@@ -10,7 +10,7 @@ import (
 
 // HIDWriter is a generic interface for a USB HID allowing writing
 type HIDWriter interface {
-	Write(TelemetryPack)
+	SendPack(TelemetryPack)
 	GetDeviceInfo() *hid.DeviceInfo
 	GetDevice() io.WriteCloser
 	SetDevice(io.WriteCloser)
@@ -82,7 +82,7 @@ func (r *registrar) Write(p TelemetryPack) {
 	defer r.mu.Unlock()
 
 	for _, d := range r.writers {
-		d.Write(p)
+		d.SendPack(p)
 	}
 }
 

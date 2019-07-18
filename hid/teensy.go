@@ -43,7 +43,7 @@ type teensy struct {
 	*SimDashDevice
 }
 
-func (t *teensy) Write(p TelemetryPack) {
+func (t *teensy) SendPack(p TelemetryPack) {
 	// Compute which of the eight LEDs to turn on based on the revLightPercent
 	revLights := p.GetRevLightPercent()
 	t.ledByte = 0
