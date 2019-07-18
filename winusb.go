@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -168,7 +167,6 @@ func WndProc(hWnd syscall.Handle, msg uint32, wParam, lParam uintptr) uintptr {
 		}
 		return 0
 	default:
-		fmt.Println("doing default", msg)
 		ret, _, _ := pDefWindowProc.Call(uintptr(hWnd), uintptr(msg), uintptr(wParam), uintptr(lParam))
 		return ret
 	}
