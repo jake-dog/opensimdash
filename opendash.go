@@ -53,6 +53,6 @@ func main() {
 		}
 
 		// Send data to any connected USB devices
-		r.Write(p)
+		r.SendPack(p)
 	}
 }
