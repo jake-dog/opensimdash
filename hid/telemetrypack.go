@@ -6,5 +6,5 @@ package hid
 type TelemetryPack interface {
 	GetGear() int
 	GetRevLightPercent() int
-	Speed() int
+	GetSpeed() int
 }
