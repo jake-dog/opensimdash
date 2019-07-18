@@ -52,7 +52,7 @@ func (d *SimDashDevice) equals(h *hid.DeviceInfo) bool {
 	return false
 }
 
-// HIDRegistrar fulfills the UsbDeviceNotifier interface, but adds Write method
+// HIDRegistrar fulfills UsbDeviceNotifier interface but adds SendPack method
 type HIDRegistrar interface {
 	SendPack(TelemetryPack)
 	Add(uintptr)
