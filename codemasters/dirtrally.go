@@ -9,8 +9,13 @@ import (
 	"math"
 )
 
-// DirtPacketSize is 264 bytes (66 * 32-bit words/fields/floats) [extradata=3]
-const DirtPacketSize = 264
+const (
+	// DirtPacketSize is 264 bytes (66 * 32-bit words/fields/floats) [extradata=3]
+	DirtPacketSize = 264
+
+	// Speed appears to be in meters per second (m/s), so convert to MPH
+	mslashs float32 = 2.23694
+)
 
 // DirtPacket is a bit shy of 264 bytes, so clearly missing some data.
 type DirtPacket struct {
@@ -97,8 +102,7 @@ func (p *DirtPacket) GetRevLightPercent() int {
 }
 
 func (p *DirtPacket) GetSpeed() int {
-	// TODO
-	return 0
+	return int(p.Speed * mslashs)
 }
 
 // Decode converts a little endian byte array into a DirtPacket.  Although this
