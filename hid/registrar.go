@@ -8,8 +8,8 @@ import (
 	"github.com/karalabe/hid"
 )
 
-// HIDWriter is a generic interface for a USB HID allowing writing
-type HIDWriter interface {
+// PackSender is a generic interface for a USB HID allowing writing
+type PackSender interface {
 	// SendPack to the user supplied code so that it can be converted to device
 	// specific []byte, then sent to the device via provided Write method.
 	SendPack(TelemetryPack)
@@ -62,13 +62,13 @@ type HIDRegistrar interface {
 type registrar struct {
 	once    sync.Once
 	mu      sync.Mutex
-	devices []HIDWriter
-	writers []HIDWriter
+	devices []PackSender
+	writers []PackSender
 }
 
 var r = &registrar{}
 
-func Register(d HIDWriter) {
+func Register(d PackSender) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
