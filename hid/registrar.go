@@ -10,35 +10,43 @@ import (
 
 // HIDWriter is a generic interface for a USB HID allowing writing
 type HIDWriter interface {
+	// SendPack to the user supplied code so that it can be converted to device
+	// specific []byte, then sent to the device via provided Write method.
 	SendPack(TelemetryPack)
-	GetDeviceInfo() *hid.DeviceInfo
-	GetDevice() io.WriteCloser
-	SetDevice(io.WriteCloser)
-	Equals(*hid.DeviceInfo) bool
+
+	// Sealed methods only implemented by SimDashDevice
+	getDevice() io.WriteCloser
+	setDevice(io.WriteCloser)
+	equals(*hid.DeviceInfo) bool
 }
 
 type SimDashDevice struct {
-	Device     io.WriteCloser
-	DeviceInfo *hid.DeviceInfo
+	VendorID  uint16
+	ProductID uint16
+	UsagePage uint16
+	Usage     uint16
+
+	// TODO allow multiple instances of the same device
+	device io.WriteCloser
 }
 
-func (d *SimDashDevice) SetDevice(dev io.WriteCloser) {
-	d.Device = dev
+func (d *SimDashDevice) Write(p []byte) (int, error) {
+	return d.device.Write(p)
 }
 
-func (d *SimDashDevice) GetDevice() io.WriteCloser {
-	return d.Device
+func (d *SimDashDevice) setDevice(dev io.WriteCloser) {
+	d.device = dev
 }
 
-func (d *SimDashDevice) GetDeviceInfo() *hid.DeviceInfo {
-	return d.DeviceInfo
+func (d *SimDashDevice) getDevice() io.WriteCloser {
+	return d.device
 }
 
-func (d *SimDashDevice) Equals(h *hid.DeviceInfo) bool {
-	if d.DeviceInfo.VendorID == h.VendorID &&
-		d.DeviceInfo.ProductID == h.ProductID &&
-		d.DeviceInfo.UsagePage == h.UsagePage &&
-		d.DeviceInfo.Usage == h.Usage {
+func (d *SimDashDevice) equals(h *hid.DeviceInfo) bool {
+	if d.VendorID == h.VendorID &&
+		d.ProductID == h.ProductID &&
+		d.UsagePage == h.UsagePage &&
+		d.Usage == h.Usage {
 		return true
 	}
 	return false
@@ -98,16 +106,16 @@ func (r *registrar) Remove(_ uintptr) {
 		var found bool
 		for _, d := range devices {
 			// If device is still connected, make sure its in the writers array
-			if conn.Equals(&d) {
+			if conn.equals(&d) {
 				r.writers[i] = conn
 				i++
 				found = true
 			}
 		}
 		// Attempt to close device and remove all record of it
-		if !found && conn.GetDevice() != nil {
-			conn.GetDevice().Close()
-			conn.SetDevice(nil)
+		if !found && conn.getDevice() != nil {
+			conn.getDevice().Close()
+			conn.setDevice(nil)
 		}
 	}
 	r.writers = r.writers[:i]
@@ -122,11 +130,11 @@ func (r *registrar) Add(_ uintptr) {
 	// Check which writers are supported
 	for _, dev := range r.devices {
 		for _, d := range devices {
-			if dev.Equals(&d) && dev.GetDevice() == nil {
+			if dev.equals(&d) && dev.getDevice() == nil {
 				if device, err := d.Open(); err != nil {
 					fmt.Printf("Unable to open device %v\n", d)
 				} else {
-					dev.SetDevice(device)
+					dev.setDevice(device)
 					r.writers = append(r.writers, dev)
 				}
 			}

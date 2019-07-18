@@ -2,8 +2,6 @@ package hid
 
 import (
 	"fmt"
-
-	"github.com/karalabe/hid"
 )
 
 func init() {
@@ -13,12 +11,10 @@ func init() {
 		snd:    make([]byte, 64),
 		levels: []int{80, 83, 85, 87, 89, 91, 93, 95},
 		SimDashDevice: &SimDashDevice{
-			DeviceInfo: &hid.DeviceInfo{
-				VendorID:  0x16c0,
-				ProductID: 0x0480,
-				UsagePage: 0xFFAB,
-				Usage:     0x200,
-			},
+			VendorID:  0x16c0,
+			ProductID: 0x0480,
+			UsagePage: 0xFFAB,
+			Usage:     0x200,
 		},
 	})
 
@@ -26,12 +22,10 @@ func init() {
 	// messages.  It doesn't receive data, only sends it.
 	/*Register(&teensy{
 		SimDashDevice: &SimDashDevice{
-			DeviceInfo: &hid.DeviceInfo{
-				VendorID:  0x16c0,
-				ProductID: 0x0480,
-				UsagePage: 0xFF31,
-				Usage:     0x0074,
-			},
+			VendorID:  0x16c0,
+			ProductID: 0x0480,
+			UsagePage: 0xFF31,
+			Usage:     0x0074,
 		},
 	})*/
 }
@@ -59,7 +53,7 @@ func (t *teensy) SendPack(p TelemetryPack) {
 	}
 	t.snd[0] = t.ledByte
 
-	if _, err := t.Device.Write(t.snd); err != nil {
+	if _, err := t.Write(t.snd); err != nil {
 		// TODO figure out the logging . . .
 		fmt.Println(err)
 	}
