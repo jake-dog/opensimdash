@@ -20,14 +20,14 @@ func init() {
 
 	// TeensyDebug is a separate Usage/UsagePage possibly used for sending debug
 	// messages.  It doesn't receive data, only sends it.
-	/*Register(&teensy{
+	Register(&DebugDevice{
 		SimDashDevice: &SimDashDevice{
 			VendorID:  0x16c0,
 			ProductID: 0x0480,
 			UsagePage: 0xFF31,
 			Usage:     0x0074,
 		},
-	})*/
+	})
 }
 
 type teensy struct {
