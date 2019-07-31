@@ -8,16 +8,22 @@ import (
 	"github.com/karalabe/hid"
 )
 
-// PackSender is a generic interface for a USB HID allowing writing
+// PackSender is a generic interface for a writing telemetry packs
 type PackSender interface {
 	// SendPack to the user supplied code so that it can be converted to device
 	// specific []byte, then sent to the device via provided Write method.
 	SendPack(TelemetryPack)
+}
+
+// HIDPackSender has some sealed methods added to PackSender for device tracking
+type HIDPackSender interface {
+	PackSender
 
 	// Sealed methods only implemented by SimDashDevice
 	getDevice() io.WriteCloser
 	setDevice(io.WriteCloser)
 	equals(*hid.DeviceInfo) bool
+	debug() bool // TODO change to an enumerated type to allow more device types
 }
 
 type SimDashDevice struct {
@@ -52,9 +58,25 @@ func (d *SimDashDevice) equals(h *hid.DeviceInfo) bool {
 	return false
 }
 
+func (d *SimDashDevice) debug() bool {
+	return false
+}
+
+// DebugDevice is the same as SimDashDevice but telmetry is not sent to it,
+// instead an infinite loop reads messages from the device and logs the output.
+type DebugDevice struct {
+	PackSender
+	*SimDashDevice
+}
+
+func (d *DebugDevice) debug() bool {
+	return true
+}
+
 // HIDRegistrar fulfills UsbDeviceNotifier interface but adds SendPack method
 type HIDRegistrar interface {
-	SendPack(TelemetryPack)
+	PackSender
+
 	Add(uintptr)
 	Remove(uintptr)
 }
@@ -62,13 +84,13 @@ type HIDRegistrar interface {
 type registrar struct {
 	once    sync.Once
 	mu      sync.Mutex
-	devices []PackSender
-	writers []PackSender
+	devices []HIDPackSender
+	writers []HIDPackSender
 }
 
 var r = &registrar{}
 
-func Register(d PackSender) {
+func Register(d HIDPackSender) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -81,7 +103,9 @@ func Register(d PackSender) {
 // to using the Write method.
 func Registrar() HIDRegistrar {
 	// Add all recognized devices the first time the registrar is invoked
-	r.once.Do(func() { r.Add(uintptr(0)) })
+	r.once.Do(func() {
+		r.Add(uintptr(0))
+	})
 	return r
 }
 
@@ -133,6 +157,12 @@ func (r *registrar) Add(_ uintptr) {
 			if dev.equals(&d) && dev.getDevice() == nil {
 				if device, err := d.Open(); err != nil {
 					fmt.Printf("Unable to open device %v\n", d)
+				} else if dev.debug() {
+					dev.setDevice(device)
+					debugger := &HIDDebugger{
+						Device: device,
+					}
+					go debugger.ReadLoop()
 				} else {
 					dev.setDevice(device)
 					r.writers = append(r.writers, dev)
