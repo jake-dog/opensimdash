@@ -2,9 +2,11 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/websocket"
+	"github.com/jake-dog/opendash/hid"
 )
 
 var (
@@ -13,6 +15,12 @@ var (
 		WriteBufferSize: 1024,
 	}
 	defaultWriter = &WebSockWriter{}
+
+	// ws is a wrapper around defaultWriter for faster JSON marshalling
+	ws = &webSockPackSender{
+		WebSockWriter: defaultWriter,
+		Buf:           make([]byte, 0, 100), // Size large enough for marshalling!
+	}
 )
 
 func init() {
@@ -20,11 +28,20 @@ func init() {
 	http.Handle("/", http.FileServer(http.Dir("static")))
 }
 
-type dataPoint struct {
-	//Time       float32
-	Speed      int
-	Gear       int
-	percentRPM int
+type webSockPackSender struct {
+	*WebSockWriter
+	Buf []byte
+}
+
+// SendPack is about 6 times faster than json.Marshaler
+func (ws *webSockPackSender) SendPack(d hid.TelemetryPack) {
+	ws.Buf = append(ws.Buf, `{"Gear":`...)
+	ws.Buf = strconv.AppendInt(ws.Buf, int64(d.GetGear()), 10) // Avoid allocs!
+	ws.Buf = append(ws.Buf, `,"Speed":`...)
+	ws.Buf = strconv.AppendInt(ws.Buf, int64(d.GetSpeed()), 10) // Avoid allocs!
+	ws.Buf = append(ws.Buf, `}`...)
+	ws.Buf = ws.Buf[:0]
+	ws.Write(ws.Buf)
 }
 
 // WebSockWriter provides a thread safe mechanism for performing synchronous

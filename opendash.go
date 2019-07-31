@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -43,16 +42,10 @@ func main() {
 			break // TODO probably need better than this for error handling...
 		}
 
-		// Send data to websockets
-		b, _ := json.Marshal(&dataPoint{
-			Speed: p.GetSpeed(),
-			Gear:  p.GetGear(),
-		})
-		if _, err := WriteMessage(b); err != nil {
-			logger.Println(err)
-		}
+		// Send data to websocket clients
+		ws.SendPack(p)
 
-		// Send data to any connected USB devices
+		// Send data to any connected USB HID devices
 		r.SendPack(p)
 	}
 }
