@@ -1,10 +1,6 @@
 OpenSimDash
 ===========
-There didn't seem to be many F/OSS libraries for collecting telemetry data from racing games, such as Codemasters' Dirt Rally and F1 2018, so I decided to create one.
-
-What it do?
-===========
-OpenSimDash reads telemetry data sent over UDP from games, and pushes it to connected HID devices and web clients to power DIY sim racing dashboards/indicators.
+Build custom sim racing dashboards/indicators with HID-compatible devices ([teensy](https://www.pjrc.com/store/teensypp.html)/[arduino](https://store.arduino.cc/usa/arduino-micro)/[adafruit](https://www.adafruit.com/product/2771)) and/or browser-based UIs (cellphones/tablets).
 
 Supported Games
 ===============
@@ -19,6 +15,7 @@ Currently [karalabe/hid](github.com/karalabe/hid) is used for USB HID communicat
 
 Alternatives
 ============
+There didn't seem to be many F/OSS libraries for collecting telemetry data from racing games, such as Codemasters' Dirt Rally and F1 2018, which is why I created one.  Here's every alternative I've found to date.
 
 #### F/OSS
 * https://github.com/Billiam/pygauge
