@@ -3,6 +3,7 @@ package hid
 import (
 	"fmt"
 	"io"
+	"log"
 	"sync"
 
 	"github.com/karalabe/hid"
@@ -38,6 +39,15 @@ type SimDashDevice struct {
 
 func (d *SimDashDevice) Write(p []byte) (int, error) {
 	return d.device.Write(p)
+}
+
+func (d *SimDashDevice) String() string {
+	return fmt.Sprintf(
+		"VID=%d PID=%d UsagePage=%d Usage=%d",
+		d.VendorID,
+		d.ProductID,
+		d.UsagePage,
+		d.Usage)
 }
 
 func (d *SimDashDevice) setDevice(dev io.WriteCloser) {
@@ -82,6 +92,7 @@ type HIDRegistrar interface {
 }
 
 type registrar struct {
+	logger  *log.Logger // TODO probably better to use an interface
 	once    sync.Once
 	mu      sync.Mutex
 	devices []HIDPackSender
@@ -101,12 +112,21 @@ func Register(d HIDPackSender) {
 // interface and is intended to receive notifications on device changes via
 // WM_DEVICECHANGE messages.  Any HID devices which are detected can be written
 // to using the Write method.
-func Registrar() HIDRegistrar {
+func Registrar(logger *log.Logger) HIDRegistrar {
 	// Add all recognized devices the first time the registrar is invoked
 	r.once.Do(func() {
+		r.logger = logger
 		r.Add(uintptr(0))
 	})
 	return r
+}
+
+func (r *registrar) logf(format string, args ...interface{}) {
+	if r.logger != nil {
+		r.logger.Printf(format, args...)
+	} else {
+		log.Printf(format, args...)
+	}
 }
 
 func (r *registrar) SendPack(p TelemetryPack) {
@@ -127,22 +147,31 @@ func (r *registrar) Remove(_ uintptr) {
 	// Remove any writers that aren't connected
 	var i int
 	for _, conn := range r.writers {
-		var found bool
 		for _, d := range devices {
 			// If device is still connected, make sure its in the writers array
 			if conn.equals(&d) {
 				r.writers[i] = conn
 				i++
-				found = true
 			}
-		}
-		// Attempt to close device and remove all record of it
-		if !found && conn.getDevice() != nil {
-			conn.getDevice().Close()
-			conn.setDevice(nil)
 		}
 	}
 	r.writers = r.writers[:i]
+
+	// Close devices that are disconnected
+	for _, dev := range r.devices {
+		var found bool
+		for _, d := range devices {
+			if dev.equals(&d) {
+				found = true
+			}
+		}
+
+		if !found && dev.getDevice() != nil {
+			r.logf("HID device disconnected : %v", dev)
+			dev.getDevice().Close()
+			dev.setDevice(nil)
+		}
+	}
 }
 
 func (r *registrar) Add(_ uintptr) {
@@ -156,14 +185,17 @@ func (r *registrar) Add(_ uintptr) {
 		for _, d := range devices {
 			if dev.equals(&d) && dev.getDevice() == nil {
 				if device, err := d.Open(); err != nil {
-					fmt.Printf("Unable to open device %v\n", d)
+					r.logf("%v : %v", err, dev)
 				} else if dev.debug() {
+					r.logf("HID debug device connected : %v", dev)
 					dev.setDevice(device)
-					debugger := &HIDDebugger{
+					debugger := &Debugger{
 						Device: device,
+						Log:    r.logger,
 					}
 					go debugger.ReadLoop()
 				} else {
+					r.logf("HID telemetry device connected : %v", dev)
 					dev.setDevice(device)
 					r.writers = append(r.writers, dev)
 				}

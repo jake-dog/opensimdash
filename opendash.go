@@ -20,8 +20,8 @@ func main() {
 	go http.ListenAndServe(":8080", nil)
 
 	// Handle USB device add/remove
-	r := hid.Registrar()
-	AddSubscriber(r)
+	r := hid.Registrar(logger)
+	AddSubscriber(r) // Register for Windows WM_DEVICECHANGE events
 
 	// Create a new UDP connection to read telemetry
 	// TODO this all needs to be configurable/optional/etc.
