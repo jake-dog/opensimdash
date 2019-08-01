@@ -35,12 +35,12 @@ type webSockPackSender struct {
 
 // SendPack is about 6 times faster than json.Marshaler
 func (ws *webSockPackSender) SendPack(d hid.TelemetryPack) {
+	ws.Buf = ws.Buf[:0]
 	ws.Buf = append(ws.Buf, `{"Gear":`...)
 	ws.Buf = strconv.AppendInt(ws.Buf, int64(d.GetGear()), 10) // Avoid allocs!
 	ws.Buf = append(ws.Buf, `,"Speed":`...)
 	ws.Buf = strconv.AppendInt(ws.Buf, int64(d.GetSpeed()), 10) // Avoid allocs!
 	ws.Buf = append(ws.Buf, `}`...)
-	ws.Buf = ws.Buf[:0]
 	ws.Write(ws.Buf)
 }
 
