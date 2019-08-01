@@ -1,10 +1,15 @@
 OpenSimDash
 ===========
-There didn't seem to be many F/OSS libraries for collecting telemetry data from racing games, such as Codemasters' Dirt Rally and F1 2018, so I decided to create my own.
+There didn't seem to be many F/OSS libraries for collecting telemetry data from racing games, such as Codemasters' Dirt Rally and F1 2018, so I decided to create one.
 
 What it do?
 ===========
-Right now all it does is read Dirt Rally (1.0 and 2.0) UDP telemetry and send rev light data to a connected HID device ([teensy++](https://www.pjrc.com/store/teensypp.html) in my case).
+OpenSimDash reads telemetry data sent over UDP from games, and pushes it to connected HID devices and web clients to power DIY sim racing dashboards/indicators.
+
+Supported Games
+===============
+* Dirt Rally 1.0 and 2.0
+* More soon . . .
 
 Why golang?
 ===========
@@ -24,5 +29,6 @@ Alternatives
 * https://fanaleds.com
 * https://www.stryder-it.de/simdashboard/
 * https://x-sim.de/software.php
+* https://simracingapps.com
 * Many random things on https://www.racedepartment.com
 
