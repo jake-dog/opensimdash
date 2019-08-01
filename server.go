@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
-	"github.com/jake-dog/opendash/hid"
+	"github.com/jake-dog/opensimdash/hid"
 )
 
 var (

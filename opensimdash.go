@@ -6,8 +6,8 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/jake-dog/opendash/codemasters"
-	"github.com/jake-dog/opendash/hid"
+	"github.com/jake-dog/opensimdash/codemasters"
+	"github.com/jake-dog/opensimdash/hid"
 )
 
 var logger = log.New(os.Stdout, "", log.LstdFlags|log.LUTC|log.Lshortfile)
